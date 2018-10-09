@@ -269,5 +269,5 @@ def load(filename):
             result.append(parsePrintItem(printItem))
             printItem = {}
 
+    return sorted(result, key=lambda x: x.print_id)
     
-    return result
