@@ -244,7 +244,7 @@ def parsePrintItem(item):
 
 def load(filename):
     result = []
-    f = open(sys.argv[1], 'r', encoding='utf8')
+    f = open(filename, 'r', encoding='utf8')
     printItem = {}
 
     lineR =  re.compile( r"(.*?): (.*)" )
