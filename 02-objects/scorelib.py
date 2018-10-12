@@ -7,17 +7,21 @@ class Print:
         self.print_id = print_id
         self.partiture = partiture
     def format(self):
-        print("Print Number: " + str(self.print_id))
-        print("Composer: " + printPeople(self.composition().authors, ";"))
-        print("Title: " + checkNone(self.composition().name))
-        print("Genre: " + checkNone(self.composition().genre))
-        print("Key: " + checkNone(self.composition().key))
-        print("Composition Year: " + str(checkNone(self.composition().year)))
-        print("Edition: " + checkNone(self.edition.name))
-        print("Editor: " + printPeople(self.edition.authors, ","))
-        print(printVoices(self.composition().voices), end='')
-        print("Partiture: " + ("yes" if self.partiture else "no"))
-        print("Incipit: " + checkNone(self.composition().incipit))
+        result = ""
+
+        result += "Print Number:" + putSpace(str(self.print_id)) + "\n"
+        result += "Composer:" + putSpace(printPeople(self.composition().authors, ";")) + "\n"
+        result += "Title:" + putSpace(checkNone(self.composition().name)) + "\n"
+        result += "Genre:" + putSpace(checkNone(self.composition().genre)) + "\n"
+        result += "Key:" + putSpace(checkNone(self.composition().key)) + "\n"
+        result += "Composition Year:" + putSpace(str(checkNone(self.composition().year))) + "\n"
+        result += "Edition:" + putSpace(checkNone(self.edition.name)) + "\n"
+        result += "Editor:" + putSpace(printPeople(self.edition.authors, ",")) + "\n"
+        result += printVoices(self.composition().voices)
+        result += "Partiture:" + putSpace(("yes" if self.partiture else "no")) + "\n"
+        result += "Incipit:" + putSpace(checkNone(self.composition().incipit))
+
+        print(result)
     def composition(self):
         return self.edition.composition
 
@@ -59,6 +63,12 @@ def intNone(value):
         return None
     else:
         return int(value)
+
+def putSpace(value):
+    if value == "":
+        return value
+    else:
+        return " " + value
 
 def printVoices(voices):
     result = ""
@@ -149,6 +159,9 @@ def parseEditors(editors):
                 result.append(Person(name, None, None))
                 result.append(Person(item, None, None))
                 name = ""
+
+    if name != "":
+        result.append(Person(name, None, None))
 
     return result
 
