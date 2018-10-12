@@ -241,10 +241,11 @@ def parsePrintItem(item):
 
     # Composition year
     if 'Composition Year' in item and item['Composition Year'] != None:
-        yearR = re.compile( r"[0-9]{4}" )
+        yearR = re.compile( r"(.*?)([0-9]{4})" )
         yearM = yearR.match(item['Composition Year'])
+
         if yearM is not None:
-            p.edition.composition.year = int(yearM.group(0))
+            p.edition.composition.year = int(yearM.group(2))
         else:
             p.edition.composition.year = None
     else:
@@ -260,7 +261,7 @@ def load(filename):
     f = open(filename, 'r', encoding='utf8')
     printItem = {}
 
-    lineR =  re.compile( r"(.*?): (.*)" )
+    lineR =  re.compile( r"(.*?):(.*)" )
 
     for line in f:
         lineM = lineR.match(line)
