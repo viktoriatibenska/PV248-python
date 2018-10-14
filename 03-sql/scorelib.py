@@ -18,7 +18,7 @@ class Print:
         result += "Edition:" + putSpace(checkNone(self.edition.name)) + "\n"
         result += "Editor:" + putSpace(printPeople(self.edition.authors, ",")) + "\n"
         result += printVoices(self.composition().voices)
-        result += "Partiture:" + putSpace(("yes" if self.partiture else "no")) + "\n"
+        result += "Partiture:" + putSpace(printPartiture(self.partiture)) + "\n"
         result += "Incipit:" + putSpace(checkNone(self.composition().incipit))
 
         print(result)
@@ -106,6 +106,14 @@ def printPeople(people, separator):
         i = i + 1
 
     return result
+
+def printPartiture(value):
+    if value == 'Y':
+        return "yes"
+    elif value == 'P':
+        return "partial"
+    else:
+        return "no"
 
 def parsePeople(people, deliminator):
     result = []
@@ -202,10 +210,15 @@ def parsePrintItem(item):
     p.print_id = int(item['Print Number'])
 
     # Partiture
-    if item['Partiture'] != None and item['Partiture'].find("yes") is not -1:
-        p.partiture = True
+    if item['Partiture'] != None:
+        if item['Partiture'].find("partial") is not -1:
+            p.partiture = 'P'
+        elif item['Partiture'].find("yes") is not -1:
+            p.partiture = 'Y'
+        else:
+            p.partiture = 'N'
     else:
-        p.partiture = False
+        p.partiture = 'N'
 
     # Edition name
     p.edition = Edition(None, None, item['Edition'])
