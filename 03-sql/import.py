@@ -108,8 +108,11 @@ def insertPrint(print, editionId, cursor):
     if match is None:
         cursor.execute("INSERT INTO print(id, partiture, edition) VALUES(?, ?, ?)", (print.print_id, print.partiture, editionId))
 
-if __name__ == "__main__":
+def main():
     db = initDb(sys.argv[2], "scorelib.sql")
     insertData(module.load(sys.argv[1]), db)
     db.commit()
     db.close()
+
+if __name__ == "__main__":
+    main()
