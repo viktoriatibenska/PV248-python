@@ -22,12 +22,15 @@ def main(datFile):
         item = {}
         res = []
         for m in match:
-            item["name"] = m[0]
-            item["born"] = m[1]
-            item["died"] = m[2]
+            if m[0] != None:
+                item["name"] = m[0]
+            if m[1] != None:
+                item["born"] = m[1]
+            if m[2] != None:
+                item["died"] = m[2]
             res.append(item)
             item = {}
-        print(json.dumps(res, ensure_ascii=False))
+        print(json.dumps(res, ensure_ascii=False, indent=4))
 
 if __name__ == "__main__":
     main("scorelib.dat")
