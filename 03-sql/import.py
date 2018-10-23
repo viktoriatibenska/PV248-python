@@ -57,26 +57,70 @@ def insertPerson(person, cursor):
         return match[0]
 
 def insertScore(composition, cursor):
+    res = -1
     cursor.execute("SELECT * FROM score WHERE name IS ? AND genre IS ? AND key IS ? AND incipit IS ? AND year IS ?", 
                     (composition.name, composition.genre, composition.key, composition.incipit, composition.year,))
-    match = cursor.fetchone()
+    match = cursor.fetchall()
 
-    if match is None:
+    if match is not None:
+        for m in match:
+            cursor.execute("SELECT * FROM score_author as s JOIN person AS p ON p.id = s.composer WHERE s.score = ?", (m[0],))
+            composers = cursor.fetchall()
+            cursor.execute("SELECT * FROM voice WHERE score = ?", (m[0],))
+            voices = cursor.fetchall()
+            if compareAuthors(composers, composition.authors, 6) and compareVoices(voices, composition.voices):
+                res = m[0]
+                break
+    if match is None or res == -1:
         cursor.execute("INSERT INTO score(name, genre, key, incipit, year) VALUES (?, ?, ?, ?, ?)",
                         (composition.name, composition.genre, composition.key, composition.incipit, composition.year))
-        return cursor.lastrowid
-    else:
-        return match[0]
+        res = cursor.lastrowid
+    
+    return res
 
 def insertEdition(edition, scoreId, cursor):
+    res = -1
     cursor.execute("SELECT * FROM edition WHERE score IS ? AND name IS ?", (scoreId, edition.name,))
-    match = cursor.fetchone()
+    match = cursor.fetchall()
 
-    if match is None:
+    if match is not None:
+        for m in match:
+            cursor.execute("SELECT * FROM edition_author as e JOIN person AS p ON p.id = e.editor WHERE e.edition = ?", (m[0],))
+            editors = cursor.fetchall()
+            if compareAuthors(editors, edition.authors, 6):
+                res = m[0]
+                break
+    if match is None or res == -1:
         cursor.execute("INSERT INTO edition(score, name, year) VALUES(?, ?, ?)", (scoreId, edition.name, None))
-        return cursor.lastrowid
-    else:
-        return match[0]
+        res = cursor.lastrowid
+    
+    return res
+
+def compareVoices(dbVoices, localVoices):
+    if len(dbVoices) != len(localVoices):
+        return False
+    for dv in dbVoices:
+        found = False
+        index = 1
+        for lv in localVoices:
+            if dv[1] == index and ((lv is None and dv[3] is None and dv[4] is None) or (dv[3] == lv.range and dv[4] == lv.name)):
+                found = True
+            index += 1
+        if not found:
+            return False
+    return True
+
+def compareAuthors(dbAuthors, localAuthors, colIndex):
+    if len(dbAuthors) != len(localAuthors):
+        return False
+    for de in dbAuthors:
+        found = False
+        for le in localAuthors:
+            if de[colIndex] == le.name:
+                found = True
+        if not found:
+            return False
+    return True
 
 def insertVoice(voice, scoreId, number, cursor):
     cursor.execute("SELECT * FROM voice WHERE number IS ? AND score IS ? AND range IS ? AND name IS ?",
