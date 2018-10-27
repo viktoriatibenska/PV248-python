@@ -1,0 +1,45 @@
+2x + 3y = 5
+ x -  y = 0
+solution: x = 1.0, y = 1.0
+
+x + y = 4
+x + y = 5
+no solution
+
+x + y - z = 0
+x = 0
+solution space dimension: 1
+
+10x = 1
+solution: x = 0.1
+
+2x + y = 5
+- x + y = 2
+solution: x = 1.0, y = 3.0
+
+2x + y - 2z = 3
+x - y - z = 0
+x + y + 3z = 12
+solution: x = 3.5, y = 1.0, z = 2.5
+
+x + z = 6
+z - 3y = 7
+2x + y + 3z = 15
+solution: x = 2.0, y = -1.0, z = 4.0
+
+3x + 2y = 19
+x + y = 8
+solution: x = 3.0, y = 5.0
+
+2x - y = 4
+6x - 3y = 3
+no solution
+
+2x - y = 4
+6x - 3y = 12
+solution space dimension: 1
+
+3a + 3b + 15c + 11d = 0
+a - 3b + c + d = 0
+2a + 3b + 11c + 8d = 0
+solution space dimension: 2
