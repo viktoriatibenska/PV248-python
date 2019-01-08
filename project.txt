@@ -1,0 +1,5 @@
+Hra Breakout s pomocou pygame s rozsahom:
+- Ovládanie myšou a klávesnicou
+- Jeden level
+- Zvukové efekty
+- Úvodné/Pause menu
