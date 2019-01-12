@@ -1,15 +1,16 @@
 # TODO: end game
-# TODO: continue in menu
 # TODO: change of direction according to where the ball hit the paddle
 
 import pygame
 import pygame.gfxdraw
 import math
 
+# Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RAINBOW = [(94, 189, 62), (255, 185, 0), (247, 130, 0), (226, 56, 56), (151, 57, 153), (0, 156, 223)]
 
+# Screen size
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
@@ -102,23 +103,34 @@ class Ball(pygame.sprite.Sprite):
             self.changeDirection('h')
 
 
-def menu(rowHeight):
+def menu(rowHeight, showContinue):
     titleFont = pygame.font.Font("./lib/Code_Pro_Demo.ttf", 114)
     menuItemFont = pygame.font.Font("./lib/Code_Pro_Demo.ttf", 50)
     titleText = titleFont.render("Breakout", True, BLACK)
     titlePos = titleText.get_rect(centerx=SCREEN_WIDTH/2)
     titlePos.top = 120
 
+    continueText = menuItemFont.render("Continue", True, WHITE)
+    continueRect = continueText.get_rect()
+    continueRect.x = SCREEN_WIDTH/2 - continueRect.width/2
+
     playText = menuItemFont.render("New Game", True, WHITE)
     playRect = playText.get_rect()
-    playRect.x, playRect.y = SCREEN_WIDTH/2 - playRect.width/2, 300
+    playRect.x = SCREEN_WIDTH/2 - playRect.width/2
     
     quitText = menuItemFont.render("Quit", True, WHITE)
     quitRect = quitText.get_rect()
-    quitRect.x, quitRect.y = SCREEN_WIDTH/2 - quitRect.width/2, 370
+    quitRect.x = SCREEN_WIDTH/2 - quitRect.width/2
 
-    menu = True
-    while menu:
+    if showContinue:
+        continueRect.y = 300
+        playRect.y = 370
+        quitRect.y = 440
+    else:
+        playRect.y = 300
+        quitRect.y = 370
+
+    while True:
         mousePos = pygame.mouse.get_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -126,16 +138,22 @@ def menu(rowHeight):
                 quit()
             if event.type == pygame.MOUSEBUTTONUP:
                 if playRect.collidepoint(mousePos):
-                    menu = False
+                    return True
+                if showContinue and continueRect.collidepoint(mousePos):
+                    return False
                 if quitRect.collidepoint(mousePos):
                     pygame.quit()
                     quit()
         
-        playColor, quitColor = WHITE, WHITE
+        playColor, quitColor, continueColor = WHITE, WHITE, WHITE
         if playRect.collidepoint(mousePos):
             playColor = RAINBOW[1]
         if quitRect.collidepoint(mousePos):
             quitColor = RAINBOW[1]
+        if showContinue:
+            if continueRect.collidepoint(mousePos):
+                continueColor = RAINBOW[1]
+            continueText = menuItemFont.render("Continue", True, continueColor)
         playText = menuItemFont.render("New Game", True, playColor)
         quitText = menuItemFont.render("Quit", True, quitColor)
 
@@ -145,6 +163,8 @@ def menu(rowHeight):
         screen.blit(titleText, titlePos)
         screen.blit(playText, playRect)
         screen.blit(quitText, quitRect)
+        if showContinue:
+            screen.blit(continueText, continueRect)
         pygame.display.flip()
         clock.tick(15)
 
@@ -186,73 +206,73 @@ if __name__ == "__main__":
         RAINBOW[1]: pygame.mixer.Sound('./lib/block5.wav'),
         RAINBOW[0]: pygame.mixer.Sound('./lib/block6.wav'),
     }
-
-    # Start menu
-    menu(blockHeight)
+    playerEffect = pygame.mixer.Sound('./lib/player.wav')
 
     # Pause button
     pauseButton = pygame.image.load("./lib/pause-16.png")
     pauseRect = pauseButton.get_rect()
     pauseRect.x, pauseRect.y = SCREEN_WIDTH - pauseRect.width - 5, 5
 
-    allSprites = pygame.sprite.Group()
-    blockSprites = pygame.sprite.Group()
+    resetNewGame = False
+    while resetNewGame or menu(blockHeight, False):
+        allSprites = pygame.sprite.Group()
+        blockSprites = pygame.sprite.Group()
+        ballSprites = pygame.sprite.Group()
 
-    # Create player
-    player = Player(WHITE, 120, 15, SCREEN_WIDTH/2, SCREEN_HEIGHT - 2*15, 10)
-    allSprites.add(player)
-    playerEffect = pygame.mixer.Sound('./lib/player.wav')
+        # Create player
+        player = Player(WHITE, 120, 15, SCREEN_WIDTH/2, SCREEN_HEIGHT - 2*15, 10)
+        allSprites.add(player)
 
-    ball = Ball(WHITE, 15, SCREEN_WIDTH/2, SCREEN_HEIGHT-15-2*player.height)
-    ballSprites = pygame.sprite.Group()
-    ballSprites.add(ball)
-    allSprites.add(ball)
+        ball = Ball(WHITE, 15, SCREEN_WIDTH/2, SCREEN_HEIGHT-15-2*player.height)
+        ballSprites.add(ball)
+        allSprites.add(ball)
 
-    # Create blocks
-    for row in range(6):
-        for col in range(10):
-            block = Block(RAINBOW[row], blockWidth, blockHeight, col * blockWidth, 100 + row * blockHeight)
-            allSprites.add(block)
-            blockSprites.add(block)
+        # Create blocks
+        for row in range(6):
+            for col in range(10):
+                block = Block(RAINBOW[row], blockWidth, blockHeight, col * blockWidth, 100 + row * blockHeight)
+                allSprites.add(block)
+                blockSprites.add(block)
 
-    run = True
-    while run:
-        for event in pygame.event.get():
-            # Quitting on window close
-            if event.type == pygame.QUIT:
-                run = False
-            # Pausing the game
-            if event.type == pygame.MOUSEBUTTONUP:
-                if pauseRect.collidepoint(pygame.mouse.get_pos()):
-                    menu(blockHeight)
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
-                    menu(blockHeight)
+        run = True
+        while run:
+            for event in pygame.event.get():
+                # Quitting on window close
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+                # Pausing the game
+                if event.type == pygame.MOUSEBUTTONUP:
+                    if pauseRect.collidepoint(pygame.mouse.get_pos()):
+                        resetNewGame = menu(blockHeight, True)
+                        run = not resetNewGame
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_p:
+                        resetNewGame = menu(blockHeight, True)
+                        run = not resetNewGame
 
-        # Player controls
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            player.moveLeft()
-        elif keys[pygame.K_RIGHT]:
-            player.moveRight()
-        else:
-            player.moveMouse()
+            # Player controls
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]:
+                player.moveLeft()
+            elif keys[pygame.K_RIGHT]:
+                player.moveRight()
+            else:
+                player.moveMouse()
 
-        if pygame.sprite.spritecollide(player, ballSprites, False):
-            if abs(player.rect.top - ball.rect.bottom) < ball.speed:
-                playerEffect.play()
-                ball.changeDirection('h')
+            if pygame.sprite.spritecollide(player, ballSprites, False):
+                if abs(player.rect.top - ball.rect.bottom) < ball.speed:
+                    playerEffect.play()
+                    ball.changeDirection('h')
 
-        hitBlocks = pygame.sprite.spritecollide(ball, blockSprites, True)
-        if len(hitBlocks) > 0:
-            blockEffects[hitBlocks[0].color].play()
-            ball.changeDirection(bounceDirection(ball, hitBlocks))
+            hitBlocks = pygame.sprite.spritecollide(ball, blockSprites, True)
+            if len(hitBlocks) > 0:
+                blockEffects[hitBlocks[0].color].play()
+                ball.changeDirection(bounceDirection(ball, hitBlocks))
 
-        allSprites.update()
-        screen.fill(BLACK)
-        screen.blit(pauseButton, pauseRect)
-        allSprites.draw(screen)
-        pygame.display.flip()
-        clock.tick(60)
-    
-    pygame.quit()
+            ball.update()
+            screen.fill(BLACK)
+            screen.blit(pauseButton, pauseRect)
+            allSprites.draw(screen)
+            pygame.display.flip()
+            clock.tick(60)
