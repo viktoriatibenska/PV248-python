@@ -1,6 +1,3 @@
-# TODO: end game
-# TODO: change of direction according to where the ball hit the paddle
-
 import pygame
 import pygame.gfxdraw
 import math
@@ -69,17 +66,19 @@ class Ball(pygame.sprite.Sprite):
         super().__init__()
         self.diameter = diameter
         self.radius = int(diameter / 2) - 1
-        self.image = pygame.Surface([self.diameter, self.diameter], pygame.SRCALPHA)
+        self.image = pygame.Surface([self.diameter, self.diameter])
         self.image.fill(color)
-        # pygame.gfxdraw.filled_circle(self.image, x, y, self.radius, color)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
         self.wallEffect = pygame.mixer.Sound("./lib/wall.wav")
         
-    def changeDirection(self, plane):
+    def changeDirection(self, plane, deflect):
         # If the plane hit is horizontal
-        if plane == 'h':
+        if deflect != 0:
+            self.direction = (360 - deflect) % 360
+            # self.direction = 0
+        elif plane == 'h':
             self.direction = (180 - self.direction) % 360
         # If the plane hit is vertical
         elif plane == 'v':
@@ -92,21 +91,24 @@ class Ball(pygame.sprite.Sprite):
 
         if self.rect.x <= 0:
             self.wallEffect.play()
-            self.changeDirection('v')
+            self.changeDirection('v', 0)
         if self.rect.x + self.diameter >= SCREEN_WIDTH:
             self.wallEffect.play()
-            self.changeDirection('v')
+            self.changeDirection('v', 0)
         if self.rect.y <= 0:
             self.wallEffect.play()
-            self.changeDirection('h')
+            self.changeDirection('h', 0)
         if self.rect.y + self.diameter >= SCREEN_HEIGHT:
-            self.changeDirection('h')
+            return True
+        
+        return False
 
 
-def menu(rowHeight, showContinue):
+def menu(rowHeight, showContinue, title):
     titleFont = pygame.font.Font("./lib/Code_Pro_Demo.ttf", 114)
     menuItemFont = pygame.font.Font("./lib/Code_Pro_Demo.ttf", 50)
-    titleText = titleFont.render("Breakout", True, BLACK)
+    
+    titleText = titleFont.render(title, True, BLACK)
     titlePos = titleText.get_rect(centerx=SCREEN_WIDTH/2)
     titlePos.top = 120
 
@@ -213,8 +215,11 @@ if __name__ == "__main__":
     pauseRect = pauseButton.get_rect()
     pauseRect.x, pauseRect.y = SCREEN_WIDTH - pauseRect.width - 5, 5
 
+    titleText = "Breakout"
     resetNewGame = False
-    while resetNewGame or menu(blockHeight, False):
+    while resetNewGame or menu(blockHeight, False, titleText):
+        titleText = "Breakout"
+        resetNewGame = False
         allSprites = pygame.sprite.Group()
         blockSprites = pygame.sprite.Group()
         ballSprites = pygame.sprite.Group()
@@ -244,11 +249,11 @@ if __name__ == "__main__":
                 # Pausing the game
                 if event.type == pygame.MOUSEBUTTONUP:
                     if pauseRect.collidepoint(pygame.mouse.get_pos()):
-                        resetNewGame = menu(blockHeight, True)
+                        resetNewGame = menu(blockHeight, True, titleText)
                         run = not resetNewGame
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_p:
-                        resetNewGame = menu(blockHeight, True)
+                        resetNewGame = menu(blockHeight, True, titleText)
                         run = not resetNewGame
 
             # Player controls
@@ -263,14 +268,21 @@ if __name__ == "__main__":
             if pygame.sprite.spritecollide(player, ballSprites, False):
                 if abs(player.rect.top - ball.rect.bottom) < ball.speed:
                     playerEffect.play()
-                    ball.changeDirection('h')
+                    deflect = (player.rect.left + player.width/2) - (ball.rect.left + ball.diameter/2)
+                    ball.changeDirection('h', deflect)
 
             hitBlocks = pygame.sprite.spritecollide(ball, blockSprites, True)
             if len(hitBlocks) > 0:
                 blockEffects[hitBlocks[0].color].play()
-                ball.changeDirection(bounceDirection(ball, hitBlocks))
+                ball.changeDirection(bounceDirection(ball, hitBlocks), 0)
 
-            ball.update()
+            if len(blockSprites) == 0:
+                run = False
+                titleText = "You Win"
+            if ball.update():
+                run = False
+                titleText = "You Lose"
+            
             screen.fill(BLACK)
             screen.blit(pauseButton, pauseRect)
             allSprites.draw(screen)
