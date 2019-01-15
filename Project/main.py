@@ -59,7 +59,7 @@ class Block(pygame.sprite.Sprite):
         self.color = color
 
 class Ball(pygame.sprite.Sprite):
-    speed = 6.0
+    speed = 4.0
     direction = 45.0
 
     def __init__(self, color, diameter, x, y):
@@ -77,7 +77,6 @@ class Ball(pygame.sprite.Sprite):
         # If the plane hit is horizontal
         if deflect != 0:
             self.direction = (360 - deflect) % 360
-            # self.direction = 0
         elif plane == 'h':
             self.direction = (180 - self.direction) % 360
         # If the plane hit is vertical
@@ -86,16 +85,19 @@ class Ball(pygame.sprite.Sprite):
 
     def update(self):
         radDirection = math.radians(self.direction)
-        self.rect.x += self.speed * math.sin(radDirection)
-        self.rect.y -= self.speed * math.cos(radDirection)
+        self.rect.x += round(self.speed * math.sin(radDirection))
+        self.rect.y -= round(self.speed * math.cos(radDirection))
 
         if self.rect.x <= 0:
+            self.rect.x = 1
             self.wallEffect.play()
             self.changeDirection('v', 0)
         if self.rect.x + self.diameter >= SCREEN_WIDTH:
+            self.rect.x = SCREEN_WIDTH - self.diameter - 1
             self.wallEffect.play()
             self.changeDirection('v', 0)
         if self.rect.y <= 0:
+            self.rect.y = 1
             self.wallEffect.play()
             self.changeDirection('h', 0)
         if self.rect.y + self.diameter >= SCREEN_HEIGHT:
@@ -178,11 +180,10 @@ def bounceDirection(ball, hitBlocks):
                 return 'v'
     else:
         block = hitBlocks[0].rect
-        if abs(ball.rect.right-block.left) < ball.speed:
-            print("Left contact", ball.rect.right, block.left)
+        marginOfError = ball.speed + ball.speed/2
+        if abs(ball.rect.right-block.left) < marginOfError:
             return 'v'
-        if abs(ball.rect.left-block.right) < ball.speed:
-            print("Right contact", ball.rect.left, block.right)
+        if abs(ball.rect.left-block.right) < marginOfError:
             return 'v'
 
 
@@ -287,4 +288,4 @@ if __name__ == "__main__":
             screen.blit(pauseButton, pauseRect)
             allSprites.draw(screen)
             pygame.display.flip()
-            clock.tick(60)
+            clock.tick(100)
