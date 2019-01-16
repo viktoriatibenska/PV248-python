@@ -1,5 +1,4 @@
 import pygame
-import pygame.gfxdraw
 import math
 
 # Colors
@@ -12,18 +11,18 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, color, width, height, x, y, velocity):
+    velocity = 7
+
+    def __init__(self, color, width, height, x, y):
         super().__init__()
         self.width = width
         self.height = height
         self.image = pygame.Surface([self.width, self.height])
         self.image.fill(color)
         self.mousePosition = pygame.mouse.get_pos()
-
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.velocity = velocity
 
     def moveRight(self):
         if self.rect.x + self.velocity + self.width <= SCREEN_WIDTH:
@@ -39,7 +38,6 @@ class Player(pygame.sprite.Sprite):
 
     def moveMouse(self):
         currentMousePosition = pygame.mouse.get_pos()
-
         if pygame.mouse.get_focused() != 0 and currentMousePosition != self.mousePosition:
             self.mousePosition = currentMousePosition
             self.rect.x = self.mousePosition[0] - self.width / 2
@@ -105,34 +103,65 @@ class Ball(pygame.sprite.Sprite):
         
         return False
 
+class MenuItem():
+    def __init__(self, text, color, font, y):
+        self.title = text
+        self.font = font
+        self.text = self.font.render(self.title, True, color)
+        self.color = color
+        self.rect = self.text.get_rect()
+        self.rect.x = SCREEN_WIDTH/2 - self.rect.width/2
+        self.rect.y = y
+        self.highlightedByMouse = False
+
+    def mouseOver(self, mousePosition):
+        if self.rect.collidepoint(mousePosition):
+            self.color = RAINBOW[1]
+            self.highlightedByMouse = True
+        else:
+            self.color = WHITE
+            self.highlightedByMouse = False
+        self.text = self.font.render(self.title, True, self.color)
+
+    def blit(self, screen):
+        screen.blit(self.text, self.rect)
+
+    def select(self):
+        self.color = RAINBOW[1]
+        self.text = self.font.render(self.title, True, self.color)
+
+    def unselect(self):
+        self.color = WHITE
+        self.text = self.font.render(self.title, True, self.color)
+        
+def isMouseOverMenu(menuItems):
+    for item in menuItems:
+        if item.highlightedByMouse:
+            return True
+    return False
+
+def handleEnterInMenu(showContinue, selectedItem):
+    if (showContinue and selectedItem == 1) or (not showContinue and selectedItem == 0):
+        return True
+    elif showContinue and selectedItem == 0:
+        return False
+    elif (showContinue and selectedItem == 2) or (not showContinue and selectedItem == 1):
+        pygame.quit()
+        quit()
 
 def menu(rowHeight, showContinue, title):
     titleFont = pygame.font.Font("./lib/Code_Pro_Demo.ttf", 114)
     menuItemFont = pygame.font.Font("./lib/Code_Pro_Demo.ttf", 50)
     
-    titleText = titleFont.render(title, True, BLACK)
-    titlePos = titleText.get_rect(centerx=SCREEN_WIDTH/2)
-    titlePos.top = 120
-
-    continueText = menuItemFont.render("Continue", True, WHITE)
-    continueRect = continueText.get_rect()
-    continueRect.x = SCREEN_WIDTH/2 - continueRect.width/2
-
-    playText = menuItemFont.render("New Game", True, WHITE)
-    playRect = playText.get_rect()
-    playRect.x = SCREEN_WIDTH/2 - playRect.width/2
-    
-    quitText = menuItemFont.render("Quit", True, WHITE)
-    quitRect = quitText.get_rect()
-    quitRect.x = SCREEN_WIDTH/2 - quitRect.width/2
+    menuTitle = MenuItem(title, BLACK, titleFont, 120)
+    menuItems = []
+    selectedItem = None
 
     if showContinue:
-        continueRect.y = 300
-        playRect.y = 370
-        quitRect.y = 440
-    else:
-        playRect.y = 300
-        quitRect.y = 370
+        menuItems.append(MenuItem("Continue", WHITE, menuItemFont, 300+len(menuItems)*70))
+    menuItems.append(MenuItem("New Game", WHITE, menuItemFont, 300+len(menuItems)*70))
+    menuItems.append(MenuItem("Quit", WHITE, menuItemFont, 300+len(menuItems)*70))
+    menuLen = len(menuItems)
 
     while True:
         mousePos = pygame.mouse.get_pos()
@@ -141,34 +170,44 @@ def menu(rowHeight, showContinue, title):
                 pygame.quit()
                 quit()
             if event.type == pygame.MOUSEBUTTONUP:
-                if playRect.collidepoint(mousePos):
+                if menuItems[menuLen-2].rect.collidepoint(mousePos):
                     return True
-                if showContinue and continueRect.collidepoint(mousePos):
+                if showContinue and menuItems[0].rect.collidepoint(mousePos):
                     return False
-                if quitRect.collidepoint(mousePos):
+                if menuItems[menuLen-1].rect.collidepoint(mousePos):
                     pygame.quit()
                     quit()
-        
-        playColor, quitColor, continueColor = WHITE, WHITE, WHITE
-        if playRect.collidepoint(mousePos):
-            playColor = RAINBOW[1]
-        if quitRect.collidepoint(mousePos):
-            quitColor = RAINBOW[1]
-        if showContinue:
-            if continueRect.collidepoint(mousePos):
-                continueColor = RAINBOW[1]
-            continueText = menuItemFont.render("Continue", True, continueColor)
-        playText = menuItemFont.render("New Game", True, playColor)
-        quitText = menuItemFont.render("Quit", True, quitColor)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_DOWN:
+                    if selectedItem == None:
+                        selectedItem = 0
+                    else:
+                        selectedItem = (selectedItem + 1) % menuLen
+                if event.key == pygame.K_UP:
+                    if selectedItem == None:
+                        selectedItem = menuLen - 1
+                    else:
+                        selectedItem = (selectedItem - 1) % menuLen
+                if (event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN) and selectedItem != None:
+                    return handleEnterInMenu(showContinue, selectedItem)
 
+        for item in menuItems:
+            item.mouseOver(mousePos)
+        if isMouseOverMenu(menuItems):
+            selectedItem = None
+        if selectedItem != None:
+            for i in range(menuLen):
+                if i == selectedItem:
+                    menuItems[i].select()
+                else:
+                    menuItems[i].unselect()
+        
         screen.fill(BLACK)
         for row in range(6):
             pygame.draw.rect(screen, RAINBOW[row], [0, 100 + row * rowHeight, SCREEN_WIDTH, rowHeight])
-        screen.blit(titleText, titlePos)
-        screen.blit(playText, playRect)
-        screen.blit(quitText, quitRect)
-        if showContinue:
-            screen.blit(continueText, continueRect)
+        menuTitle.blit(screen)
+        for item in menuItems:
+            item.blit(screen)
         pygame.display.flip()
         clock.tick(15)
 
@@ -226,7 +265,7 @@ if __name__ == "__main__":
         ballSprites = pygame.sprite.Group()
 
         # Create player
-        player = Player(WHITE, 120, 15, SCREEN_WIDTH/2, SCREEN_HEIGHT - 2*15, 10)
+        player = Player(WHITE, 120, 15, SCREEN_WIDTH/2, SCREEN_HEIGHT - 2*15)
         allSprites.add(player)
 
         ball = Ball(WHITE, 15, SCREEN_WIDTH/2, SCREEN_HEIGHT-15-2*player.height)
