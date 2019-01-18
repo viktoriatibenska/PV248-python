@@ -38,6 +38,8 @@ class Player(pygame.sprite.Sprite):
 
     def moveMouse(self):
         currentMousePosition = pygame.mouse.get_pos()
+        # If the mouse is within window and it moved from previous position
+        # If the mouse hasn't moved, player can still be moved with keyboard with the mouse within the window
         if pygame.mouse.get_focused() != 0 and currentMousePosition != self.mousePosition:
             self.mousePosition = currentMousePosition
             self.rect.x = self.mousePosition[0] - self.width / 2
@@ -72,15 +74,19 @@ class Ball(pygame.sprite.Sprite):
         self.wallEffect = pygame.mixer.Sound("./lib/wall.wav")
         
     def changeDirection(self, plane, deflect):
-        # If the plane hit is horizontal
+        # If ball hit the player, use deflect coeficient
         if deflect != 0:
             self.direction = (360 - deflect) % 360
+        # If the plane hit is horizontal
         elif plane == 'h':
             self.direction = (180 - self.direction) % 360
         # If the plane hit is vertical
         elif plane == 'v':
             self.direction = (360 - self.direction) % 360
 
+    # Function updates the ball coordinates, changes the ball direction when wall is hit
+    # If the ball hits the bottom wall, function returns True to indicate the end of the game.
+    # Otherwise returns false.
     def update(self):
         radDirection = math.radians(self.direction)
         self.rect.x += round(self.speed * math.sin(radDirection))
@@ -149,6 +155,9 @@ def handleEnterInMenu(showContinue, selectedItem):
         pygame.quit()
         quit()
 
+# Function represents menu screen. 
+# If showContinue is true, game has been paused and the option to continue it will show.
+# The title argument contains string, that will show as a caption of the menu screen.
 def menu(rowHeight, showContinue, title):
     titleFont = pygame.font.Font("./lib/Code_Pro_Demo.ttf", 114)
     menuItemFont = pygame.font.Font("./lib/Code_Pro_Demo.ttf", 50)
@@ -169,6 +178,7 @@ def menu(rowHeight, showContinue, title):
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
+            # Mouse controls in menu
             if event.type == pygame.MOUSEBUTTONUP:
                 if menuItems[menuLen-2].rect.collidepoint(mousePos):
                     return True
@@ -177,6 +187,7 @@ def menu(rowHeight, showContinue, title):
                 if menuItems[menuLen-1].rect.collidepoint(mousePos):
                     pygame.quit()
                     quit()
+            # Keyboard controls in menu
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:
                     if selectedItem == None:
@@ -191,10 +202,13 @@ def menu(rowHeight, showContinue, title):
                 if (event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN) and selectedItem != None:
                     return handleEnterInMenu(showContinue, selectedItem)
 
+        # Highlight menu item if mouse is over it
         for item in menuItems:
             item.mouseOver(mousePos)
+        # If mouse is over item in menu, delete the selection that was made by keyboard
         if isMouseOverMenu(menuItems):
             selectedItem = None
+        # If mouse is not over any item, and something is selected by keyboard, highlight it
         if selectedItem != None:
             for i in range(menuLen):
                 if i == selectedItem:
@@ -203,14 +217,18 @@ def menu(rowHeight, showContinue, title):
                     menuItems[i].unselect()
         
         screen.fill(BLACK)
+        # Draw the rainbow across screen
         for row in range(6):
             pygame.draw.rect(screen, RAINBOW[row], [0, 100 + row * rowHeight, SCREEN_WIDTH, rowHeight])
+        # Draw the title
         menuTitle.blit(screen)
+        # Draw each menu item
         for item in menuItems:
             item.blit(screen)
         pygame.display.flip()
         clock.tick(15)
 
+# Function decides, whether to bounce vertically or horizontally when ball hits the block/s
 def bounceDirection(ball, hitBlocks):
     if len(hitBlocks) > 1:
         checkRow = hitBlocks[0].rect.y
@@ -219,12 +237,13 @@ def bounceDirection(ball, hitBlocks):
                 return 'v'
     else:
         block = hitBlocks[0].rect
+        # Margin of error represents the pixel offset, that is still acceptable to determine
+        # which side of the block was hit by the ball
         marginOfError = ball.speed + ball.speed/2
         if abs(ball.rect.right-block.left) < marginOfError:
             return 'v'
         if abs(ball.rect.left-block.right) < marginOfError:
             return 'v'
-
 
     return 'h'
 
@@ -240,6 +259,7 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
     pygame.display.set_caption("Breakout")
     
+    # Init of all the sound effects
     blockEffects = {
         RAINBOW[5]: pygame.mixer.Sound('./lib/block1.wav'),
         RAINBOW[4]: pygame.mixer.Sound('./lib/block2.wav'),
@@ -257,14 +277,16 @@ if __name__ == "__main__":
 
     titleText = "Breakout"
     resetNewGame = False
+    # Loop alternating the menu and new game
+    # If resetNewGame is true, don't show the menu
     while resetNewGame or menu(blockHeight, False, titleText):
+        # Init all objects - player, ball, blocks and all the sprite groups
         titleText = "Breakout"
         resetNewGame = False
         allSprites = pygame.sprite.Group()
         blockSprites = pygame.sprite.Group()
         ballSprites = pygame.sprite.Group()
 
-        # Create player
         player = Player(WHITE, 120, 15, SCREEN_WIDTH/2, SCREEN_HEIGHT - 2*15)
         allSprites.add(player)
 
@@ -272,13 +294,13 @@ if __name__ == "__main__":
         ballSprites.add(ball)
         allSprites.add(ball)
 
-        # Create blocks
         for row in range(6):
             for col in range(10):
                 block = Block(RAINBOW[row], blockWidth, blockHeight, col * blockWidth, 100 + row * blockHeight)
                 allSprites.add(block)
                 blockSprites.add(block)
 
+        # Main game loop
         run = True
         while run:
             for event in pygame.event.get():
@@ -305,20 +327,23 @@ if __name__ == "__main__":
             else:
                 player.moveMouse()
 
+            # Collision detection between player and ball
             if pygame.sprite.spritecollide(player, ballSprites, False):
                 if abs(player.rect.top - ball.rect.bottom) < ball.speed:
                     playerEffect.play()
                     deflect = (player.rect.left + player.width/2) - (ball.rect.left + ball.diameter/2)
                     ball.changeDirection('h', deflect)
-
+            # Collision detection between ball and blocks
             hitBlocks = pygame.sprite.spritecollide(ball, blockSprites, True)
             if len(hitBlocks) > 0:
                 blockEffects[hitBlocks[0].color].play()
                 ball.changeDirection(bounceDirection(ball, hitBlocks), 0)
 
+            # End game when all blocks have been hit
             if len(blockSprites) == 0:
                 run = False
                 titleText = "You Win"
+            # End game when ball hits the bottom of the screen
             if ball.update():
                 run = False
                 titleText = "You Lose"
